@@ -1,4 +1,4 @@
-跟之前的OSUDanmuSelecter功能一致，只是做成了插件版   
+跟之前的OSUDanmuSelecter功能一致，只是做成了blive插件版方便使用   
 以后有时间可能会再改下   
 
 右键编辑打开config.py

@@ -94,7 +94,8 @@ class MsgHandler(blcsdk.BaseHandler):
         if map_id:
             room = _get_or_add_room(extra.room_id)
             room.log(f"{message.author_name}发送了点歌请求：{map_id}")
-            asyncio.create_task(send_beatmap_url(_irc_client, str(map_id)))
+            if _irc_client:
+                asyncio.create_task(send_beatmap_url(_irc_client, str(map_id), message.author_name))
 
     def _on_add_super_chat(
         self, client: blcsdk.BlcPluginClient, message: sdk_models.AddSuperChatMsg, extra: sdk_models.ExtraData
@@ -105,7 +106,8 @@ class MsgHandler(blcsdk.BaseHandler):
         if map_id:
             room = _get_or_add_room(extra.room_id)
             room.log(f"{message.author_name} 发送了 {message.price} 元的点歌请求：{map_id}")
-            asyncio.create_task(send_beatmap_url(_irc_client, str(map_id)))
+            if _irc_client:
+                asyncio.create_task(send_beatmap_url(_irc_client, str(map_id), message.author_name))
 
 def _get_or_add_room(room_id):
     room = _id_room_dict.get(room_id, None)

@@ -90,24 +90,23 @@ class AsyncIRCClient:
             self.writer.close()
             await self.writer.wait_closed()
 
-
-async def send_beatmap_url(irc_client:AsyncIRCClient, mapid:str) -> None:
+async def send_beatmap_url(irc_client:AsyncIRCClient, mapid:str, user_name:str) -> None:
     beatmapinfo:dict|None = await get_beatmap_info(mapid[0], int(mapid[1:]), config.API_SERVER)
     if beatmapinfo:
         logger.info(f"谱面信息：{beatmapinfo}")
         map_url:str = beatmapinfo["url"]
         sid = beatmapinfo["sid"]
-        beatmap_msg = " ".join([f"收到弹幕点歌：[{map_url} {beatmapinfo["artist"]} - {beatmapinfo["title"]}]",
+        beatmap_msg = " ".join([f"【{user_name}】点歌：[{map_url} {beatmapinfo["artist"]} - {beatmapinfo["title"]}]",
                                 f"Sayo分流：[https://osu.sayobot.cn/home?search={sid} osu.sayobot.cn]",
                                 f"kitsu分流：[https://osu.direct/beatmapsets/{sid} osu.direct]",
                                 ])
     else:
         # 如果无法正常获取谱面信息则直接返回链接，不考虑正确性
-        beatmap_msg = f"收到弹幕点歌：https://osu.ppy.sh/{mapid[0]}/{mapid[1:]}"
+        beatmap_msg = f"【{user_name}】点歌：https://osu.ppy.sh/{mapid[0]}/{mapid[1:]}"
     logger.info("正在发送信息")
     
     target_name = config.USER_NAME if config.SEND_SELF else "BanchoBot"
-    await send_msg(irc_client, beatmap_msg, target_name, is_action=True)
+    await send_msg(irc_client, beatmap_msg, target_name)
 
 async def send_msg(irc_client:AsyncIRCClient, msg:str, target_name:str, is_action:bool=False):
     # 给自己发送消息

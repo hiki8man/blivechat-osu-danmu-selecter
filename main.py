@@ -12,7 +12,7 @@ import config
 import listener
 from osu_irc import AsyncIRCClient
 
-logger = logging.getLogger('msg-logging')
+logger = logging.getLogger('osu-requests-bot')
 
 shut_down_event: Optional[asyncio.Event] = None
 irc_client: Optional[AsyncIRCClient] = None

@@ -14,7 +14,7 @@ import re
 from osu_irc import AsyncIRCClient
 import subprocess
 
-logger = logging.getLogger('msg-logging.' + __name__)
+logger = logging.getLogger('osu-requests-bot.' + __name__)
 
 _msg_handler: Optional['MsgHandler'] = None
 _id_room_dict: Dict[int, 'Room'] = {}

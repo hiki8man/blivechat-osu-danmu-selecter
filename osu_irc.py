@@ -8,7 +8,7 @@ import config
 from typing import Optional
 
 
-logger = logging.getLogger('osu-irc-client')
+logger = logging.getLogger('osu-requests-bot.' + __name__)
 
 class AsyncIRCClient:
     def __init__(self, host: str, port: int, nick: str, realname: str = None, password: str = None):

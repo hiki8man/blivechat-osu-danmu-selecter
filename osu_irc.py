@@ -1,5 +1,3 @@
-import socket
-import time
 import logging
 
 from info_api import get_info as get_beatmap_info
@@ -7,6 +5,7 @@ import asyncio
 import config
 from typing import Optional
 
+import importlib
 
 logger = logging.getLogger('osu-requests-bot.' + __name__)
 
@@ -21,6 +20,7 @@ class AsyncIRCClient:
         self.writer: Optional[asyncio.StreamWriter] = None
         self.running = True
         self._connected = asyncio.Event()
+        self.message_queue:asyncio.Queue[str] = asyncio.Queue()
 
     async def connect(self):
         """长连接主循环"""
@@ -68,9 +68,24 @@ class AsyncIRCClient:
             if msg.startswith("PING"):
                 token = msg.split()[1]
                 await self._send_raw(f"PONG {token}")
+            
+            #修改了irc配置的话重新连接
+            if self.nick != config.USER_NAME or self.password != config.PASSWORD:
+                await self.close()
+                self.nick = config.USER_NAME
+                self.password = config.PASSWORD
+                await self.connect()
+
+            # 添加队列检测
+            if self.message_queue.empty == False:
+                send_msg_text = await self.message_queue.get()
+                await self._send_raw(send_msg_text)
+                # 速率限制：ppy说每5秒最多10条消息
+                await asyncio.sleep(0.5)
 
     async def _send_raw(self, message: str):
         if self.writer:
+            logger.info(f"IRC: {message}")
             self.writer.write(f"{message}\r\n".encode())
             await self.writer.drain()
 
@@ -79,10 +94,10 @@ class AsyncIRCClient:
         if not self._connected.is_set():
             logger.warning("IRC: 尚未连接，无法发送消息")
             return
-        # 速率限制：ppy说每5秒最多10条消息
-        await asyncio.sleep(0.5)
-        await self._send_raw(f"PRIVMSG {target} :{message}")
-        logger.info(f"IRC: -> {target}: {message}")
+        # 每次触发消息的时候重加载config文件获取用户名和密码
+        importlib.reload(config)
+        # 将消息加入队列
+        await self.message_queue.put(f"PRIVMSG {target} :{message}")
 
     async def close(self):
         self.running = False

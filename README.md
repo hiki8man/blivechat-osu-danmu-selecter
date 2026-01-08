@@ -32,3 +32,6 @@ kitsu：从kitsu镜像站api获取谱面信息
 "url"   : 谱面链接，注意必须使用以 https://osu.ppy.sh/beatmapsets/ 开头的网址格式游戏内才能正常跳转谱面"
 }
 ```
+
+TODO：   
+将IRCAPI修改为消息队列的方式传递信息，使其能保证支持PPY要求的限速

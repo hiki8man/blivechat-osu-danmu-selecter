@@ -34,4 +34,5 @@ kitsu：从kitsu镜像站api获取谱面信息
 ```
 
 TODO：   
-将IRCAPI修改为消息队列的方式传递信息，使其能保证支持PPY要求的限速
+- 将IRCAPI修改为消息队列的方式传递信息，使其能保证支持PPY要求的限速
+- 添加OSU API v2的支持，转发模式直接使用OSU API v2

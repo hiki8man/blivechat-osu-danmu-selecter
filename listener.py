@@ -59,6 +59,11 @@ def get_mapid(danmu_text:str) -> str|None:
     if match:
         return f"b{match.group(1)}"
 
+    # 如果用户输入连 点歌 前缀都没有则要求消息只有是纯数字的时候才能匹配
+    match = re.match(r"^(\d+)$", danmu_text)
+    if match:
+        return f"b{match.group(1)}"
+
 class MsgHandler(blcsdk.BaseHandler):
     def on_client_stopped(self, client: blcsdk.BlcPluginClient, exception: Optional[Exception]):
         logger.info('blivechat disconnected')

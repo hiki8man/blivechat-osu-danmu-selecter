@@ -43,7 +43,8 @@ async def init():
             host="irc.ppy.sh",
             port=6667,
             nick=config.USER_NAME,
-            password=config.PASSWORD
+            password=config.PASSWORD,
+            shut_down_event=shut_down_event
         )
         irc_task = asyncio.create_task(irc_client.connect())
         logger.info("IRC 客户端已启动")
@@ -68,6 +69,7 @@ def init_signal_handlers():
 
 
 def start_shut_down(*_args):
+    assert shut_down_event is not None
     shut_down_event.set()
 
 
@@ -88,6 +90,7 @@ def init_logging():
 
 async def run():
     logger.info('Running event loop')
+    assert shut_down_event is not None
     await shut_down_event.wait()
     logger.info('Start to shut down')
 

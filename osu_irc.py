@@ -6,21 +6,50 @@ from info_api import get_info as get_beatmap_info
 import asyncio
 import config
 from typing import Optional
+from asyncio import Queue
 
+from dataclasses import dataclass
+
+from enum import StrEnum
 
 logger = logging.getLogger('osu-requests-bot.' + __name__)
 
+@dataclass
+class IRCMessage:
+    target: str
+    message: str
+    
+class IRCCodes(StrEnum):
+    WELCOME = "001"
+    BAD_AUTH = "464"
+    USERNAME_ERROR = "372"
+
 class AsyncIRCClient:
-    def __init__(self, host: str, port: int, nick: str, realname: str = None, password: str = None):
+    def __init__(self, 
+                 host: str, port: int, 
+                 nick: str, realname: Optional[str] = None, password: str = "", 
+                 shut_down_event: Optional[asyncio.Event] = None):
+        # IRC 服务器配置
         self.host = host
         self.port = port
+        
+        # IRC 用户登录信息
         self.nick = nick
-        self.realname = realname or nick
+        self.realname = realname or nick 
         self.password = password
+
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None
+        
         self.running = True
         self._connected = asyncio.Event()
+        # 关闭事件
+        self.shut_down_event = shut_down_event
+        
+        self._archive_task: Optional[asyncio.Task] = None
+        self._privmsg_task: Optional[asyncio.Task] = None
+
+        self.message_queue: Queue[IRCMessage] = asyncio.Queue()
 
     async def connect(self):
         """长连接主循环"""
@@ -42,13 +71,27 @@ class AsyncIRCClient:
                     if msg.startswith("PING"):
                         token = msg.split()[1]
                         await self._send_raw(f"PONG {token}")
-                    elif "001" in msg:  # RPL_WELCOME
+
+                    elif IRCCodes.WELCOME in msg:
                         logger.info("IRC: 登录成功")
                         self._connected.set()
                         break
+                    
+                    elif IRCCodes.BAD_AUTH in msg:
+                        self.running = False
+                        raise ValueError("密码错误")
+
+                    elif IRCCodes.USERNAME_ERROR in msg:
+                        self.running = False
+                        raise ValueError("用户名错误")
+
+                # 创建私聊消息处理任务循环
+                if self._privmsg_task is None or self._privmsg_task.done():
+                    self._privmsg_task = asyncio.create_task(self._privmsg_loop())
 
                 # 进入主消息循环
-                await self._message_loop()
+                self._archive_task = asyncio.create_task(self._archive_loop())
+                await self._archive_task
 
             except Exception as e:
                 logger.error(f"IRC 连接错误: {e}")
@@ -59,8 +102,12 @@ class AsyncIRCClient:
                 if self.writer:
                     self.writer.close()
                     await self.writer.wait_closed()
+        
+        # 插件退出
+        if self.shut_down_event:
+            self.shut_down_event.set()
 
-    async def _message_loop(self):
+    async def _archive_loop(self):
         """处理 IRC 消息（保持连接）"""
         assert self.reader is not None
         async for line in self.reader:
@@ -68,6 +115,25 @@ class AsyncIRCClient:
             if msg.startswith("PING"):
                 token = msg.split()[1]
                 await self._send_raw(f"PONG {token}")
+                
+    async def _privmsg_loop(self):
+        """处理消息队列"""
+        while self.running:
+            try:
+                message = await self.message_queue.get()
+            except asyncio.CancelledError:
+                logger.info("消息队列已取消")
+                break
+            try:
+                await self._connected.wait()
+                await self._send_raw(f"PRIVMSG {message.target} :{message.message}")
+                logger.info(f"IRC: -> {message.target}: {message.message}")
+            except Exception as e:
+                logger.error(f"处理消息队列时出错: {e}")
+            finally:
+                self.message_queue.task_done()
+                await asyncio.sleep(0.5)  # 速率限制：ppy说每5秒最多10条消息
+            
 
     async def _send_raw(self, message: str):
         if self.writer:
@@ -79,13 +145,17 @@ class AsyncIRCClient:
         if not self._connected.is_set():
             logger.warning("IRC: 尚未连接，无法发送消息")
             return
-        # 速率限制：ppy说每5秒最多10条消息
-        await asyncio.sleep(0.5)
-        await self._send_raw(f"PRIVMSG {target} :{message}")
-        logger.info(f"IRC: -> {target}: {message}")
+        await self.message_queue.put(IRCMessage(target=target, message=message)) 
 
     async def close(self):
         self.running = False
+        task_list = [self._archive_task, self._privmsg_task]
+        for task in task_list:
+            if task: task.cancel()
+        
+        # 等待所有任务完成取消
+        await asyncio.gather(*[task for task in task_list if task], return_exceptions=True)
+
         if self.writer:
             self.writer.close()
             await self.writer.wait_closed()

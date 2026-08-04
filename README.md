@@ -1,7 +1,9 @@
-跟之前的OSUDanmuSelecter功能一致，只是做成了blive插件版方便使用   
-以后有时间可能会再改下   
+这是一个Blivechat插件，需要配合Blivechat本地版
 
-右键编辑打开config.py
+## 如何使用
+- 下载 [xfgryujk开发的Blivechat](https://github.com/xfgryujk/blivechat/releases)
+- 将插件解压放到 Blivechat 的 data\plugins 文件夹里
+- 右键编辑打开config.py
 ```
 # ===用户配置===
 USER_NAME = "set you osu name" # 用户名
@@ -9,6 +11,7 @@ PASSWORD = "get your irc password" # irc密码
 API_SERVER = "osu_html" # 获取谱面方式，默认从官网获取
 SEND_SELF:bool = True # 是否转发给自己，lazer请设置为False让消息转发给BanchoBot
 ```
+- 打开Blivechat，在控制台插件列表启用即可
 
 弹幕指令：  
 点歌 b(bid)  

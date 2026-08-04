@@ -7,7 +7,7 @@
 USER_NAME = "set you osu name" # 用户名
 PASSWORD = "get your irc password" # irc密码
 API_SERVER = "osu_html" # 获取谱面方式，默认从官网获取
-SEND_SELF:bool = True # 是否转发给自己，lazer请设置为false让消息转发给BanchoBot
+SEND_SELF:bool = True # 是否转发给自己，lazer请设置为False让消息转发给BanchoBot
 ```
 
 弹幕指令：  

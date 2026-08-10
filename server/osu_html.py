@@ -1,8 +1,10 @@
 import json
 import re
 
-from info_api import RE_BEATMAPSET, get_response, register_info_server
+from info_api import get_response, register_info_server
 
+
+RE_BEATMAPSET = r'<script id="json-beatmapset" type="application/json">\s*(.*?)\s*</script>'
 
 @register_info_server("osu_html")
 async def get_info_osu_html(mapid_type:str, mapid_num:int) -> dict[str,str]|None:

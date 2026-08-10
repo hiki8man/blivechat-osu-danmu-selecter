@@ -209,7 +209,7 @@ async def send_beatmap_url(irc_client:AsyncIRCClient, mapid:str, user_name:str) 
     else:
         # 如果无法正常获取谱面信息则直接返回链接，不考虑正确性
         beatmap_msg = f"【{user_name}】点歌：https://osu.ppy.sh/{mapid[0]}/{mapid[1:]}"
-    logger.debug("收到点歌指令，正在发送信息到Osu IRC")
+    logger.info("收到点歌 %s，正在发送信息到Osu IRC", mapid[1:])
     
     target_name = config.USER_NAME if config.SEND_SELF else "BanchoBot"
     await send_msg(irc_client, beatmap_msg, target_name)

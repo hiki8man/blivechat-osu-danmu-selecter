@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from collections.abc import Callable
 from typing import Any
 
@@ -8,7 +7,6 @@ import aiohttp
 
 logger = logging.getLogger('osu-requests-bot.' + __name__)
 
-RE_BEATMAPSET = r'<script id="json-beatmapset" type="application/json">\n        (.*?)\n    </script>'
 
 GET_INFO_COMMON: dict[str, Callable[[str, int], Any]] = {}
 TIMEOUT = 5

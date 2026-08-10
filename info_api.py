@@ -1,10 +1,12 @@
-import aiohttp, asyncio
-import json, re
-from typing import Any
-from collections.abc import Callable
+import json
 import logging
+import re
+from collections.abc import Callable
+from typing import Any
 
-logger = logging.getLogger('osu-irc-client')
+import aiohttp
+
+logger = logging.getLogger('osu-requests-bot.' + __name__)
 
 RE_BEATMAPSET = r'<script id="json-beatmapset" type="application/json">\n        (.*?)\n    </script>'
 
@@ -17,12 +19,14 @@ async def get_url_json(url:str) -> dict:
     如果没有信息就返回空字典  
     由于sayo镜像站使用的json返回有问题，因此需要解析为text再解析回json
     """
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=TIMEOUT)) as session:
-        async with session.get(url=url) as response:
-            if response.status == 200:
-                data_text = await response.text()
-                return json.loads(data_text)
-            return {}
+    async with (
+        aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=TIMEOUT)) as session,
+        session.get(url=url) as response,
+    ):
+        if response.status == 200:
+            data_text = await response.text()
+            return json.loads(data_text)
+        return {}
 
 async def get_response(source_url:str) -> tuple[str, str]:
     '''
@@ -30,21 +34,22 @@ async def get_response(source_url:str) -> tuple[str, str]:
     如果没有重定向则直接返回response的链接  
     只适用于OSU这种只重定向一次的情况，其他情况需要考虑更改代码
     '''
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=TIMEOUT)) as session:
-        async with session.get(source_url, allow_redirects=False) as response:
-
-            if response.status == 302 and "Location" in response.headers:
-                target_url = response.headers["Location"]
-                async with session.get(target_url) as response:
-                    html_text = await response.text()
-
-            elif response.status == 200:
-                target_url = str(response.url)
+    async with (
+        aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=TIMEOUT)) as session,
+        session.get(source_url, allow_redirects=False) as response,
+    ):
+        if response.status == 302 and "Location" in response.headers:
+            target_url = response.headers["Location"]
+            async with session.get(target_url) as response:
                 html_text = await response.text()
 
-            elif response.status == 404:
-                target_url = ""
-                html_text  = ""
+        elif response.status == 200:
+            target_url = str(response.url)
+            html_text = await response.text()
+
+        elif response.status == 404:
+            target_url = ""
+            html_text  = ""
 
     return (target_url, html_text)
 
@@ -68,13 +73,13 @@ async def get_info(mapid_type:str, mapid_num:int, server_name:str = "auto") -> d
      "url"   : 谱面链接"}  
     """
     if server_name == "auto":
-        for server_name in GET_INFO_COMMON:
-            logger.info(f"正在尝试从{server_name}获取谱面信息")
-            info = await GET_INFO_COMMON[server_name](mapid_type, mapid_num)
+        for name, getter in GET_INFO_COMMON.items():
+            logger.debug("正在尝试从%s获取谱面信息", name)
+            info = await getter(mapid_type, mapid_num)
             if info:
                 return info
     else:
-        logger.info(f"正在获取谱面信息")
+        logger.debug("正在获取谱面信息")
         info = await GET_INFO_COMMON[server_name](mapid_type, mapid_num)
         if info or server_name == "osu_html":
             return info
@@ -104,5 +109,5 @@ async def get_info_osu_html(mapid_type:str, mapid_num:int) -> dict[str,str]|None
                      "sid"   : json_data["id"],
                      "url"   : map_url
                     }
-# 导入第三方API
-import server
+# 导入第三方API（副作用导入：触发 server 包注册，勿删）
+import server  # noqa: F401

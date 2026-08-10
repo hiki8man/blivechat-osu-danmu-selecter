@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import asyncio
 import logging.handlers
 import os
@@ -12,7 +11,7 @@ import config
 import listener
 from osu_irc import AsyncIRCClient
 
-logger = logging.getLogger('osu-requests-bot')
+logger = logging.getLogger('osu-requests-bot.' + __name__)
 
 shut_down_event: Optional[asyncio.Event] = None
 irc_client: Optional[AsyncIRCClient] = None
@@ -74,6 +73,7 @@ def start_shut_down(*_args):
 
 
 def init_logging():
+    os.makedirs(config.LOG_PATH, exist_ok=True)
     filename = os.path.join(config.LOG_PATH, 'msg-logging.log')
     stream_handler = logging.StreamHandler()
     file_handler = logging.handlers.TimedRotatingFileHandler(
@@ -82,8 +82,7 @@ def init_logging():
     logging.basicConfig(
         format='{asctime} {levelname} [{name}]: {message}',
         style='{',
-        level=logging.INFO,
-        # level=logging.DEBUG,
+        level=getattr(logging, config.LOG_LEVEL, logging.INFO),
         handlers=[stream_handler, file_handler],
     )
 

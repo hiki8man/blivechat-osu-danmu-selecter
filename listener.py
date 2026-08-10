@@ -1,27 +1,25 @@
-# -*- coding: utf-8 -*-
+import asyncio
 import datetime
 import logging
 import os
+import re
+import subprocess
 import sys
-from typing import *
+from typing import Optional
 
 import blcsdk
 import blcsdk.models as sdk_models
 import config
-import asyncio
-from osu_irc import send_beatmap_url
-import re
-from osu_irc import AsyncIRCClient
-import subprocess
+from osu_irc import AsyncIRCClient, send_beatmap_url
 
 logger = logging.getLogger('osu-requests-bot.' + __name__)
 
 _msg_handler: Optional['MsgHandler'] = None
-_id_room_dict: Dict[int, 'Room'] = {}
+_id_room_dict: dict[int, 'Room'] = {}
 
-_irc_client: Optional[AsyncIRCClient] = None
+_irc_client: AsyncIRCClient | None = None
 
-async def init(irc_client: Optional[AsyncIRCClient] = None, event:asyncio.Event|None = None):
+async def init(irc_client: AsyncIRCClient | None = None, event:asyncio.Event|None = None):
     global _msg_handler
     _msg_handler = MsgHandler()
     blcsdk.set_msg_handler(_msg_handler)
@@ -59,17 +57,10 @@ def get_mapid(danmu_text:str) -> str|None:
     if match:
         return f"b{match.group(1)}"
 
-"""
-    # 如果用户输入连 点歌 前缀都没有则要求消息只有是纯数字的时候才能匹配
-    match = re.match(r"^(\d+)$", danmu_text)
-    if match:
-        return f"b{match.group(1)}"
-"""
 
 class MsgHandler(blcsdk.BaseHandler):
-    def on_client_stopped(self, client: blcsdk.BlcPluginClient, exception: Optional[Exception]):
+    def on_client_stopped(self, client: blcsdk.BlcPluginClient, exception: Exception | None):
         logger.info('blivechat disconnected')
-        global _shut_down_event
         if _shut_down_event is not None:
             _shut_down_event.set()
 
@@ -77,7 +68,7 @@ class MsgHandler(blcsdk.BaseHandler):
         self, client: blcsdk.BlcPluginClient, message: sdk_models.OpenPluginAdminUiMsg, extra: sdk_models.ExtraData
     ):
         if sys.platform == 'win32':
-            subprocess.run(["notepad.exe", config.CONFIG_PATH])
+            subprocess.run(["notepad.exe", config.CONFIG_PATH], check=False)
         else:
             logger.info('Config path is "%s"', config.CONFIG_PATH)
 
@@ -134,16 +125,16 @@ def _del_room(room_id):
 
 class Room:
     def __init__(self, room_id):
-        cur_time = datetime.datetime.now()
+        cur_time = datetime.datetime.now().astimezone()
         time_str = cur_time.strftime('%Y%m%d_%H%M%S')
         filename = f'room_{room_id}-{time_str}.txt'
-        self._file = open(os.path.join(config.LOG_PATH, filename), 'a', encoding='utf-8-sig')
+        self._file = open(os.path.join(config.LOG_PATH, filename), 'a', encoding='utf-8-sig')  # noqa: SIM115 保持打开以便持续写入，由 close() 统一关闭
 
     def close(self):
         self._file.close()
 
     def log(self, content):
-        cur_time = datetime.datetime.now()
+        cur_time = datetime.datetime.now().astimezone()
         time_str = cur_time.strftime('%Y-%m-%d %H:%M:%S')
         text = f'{time_str} {content}\n'
         self._file.write(text)

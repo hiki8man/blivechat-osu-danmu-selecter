@@ -1,0 +1,31 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+
+# Ruff
+.ruff_cache/
+
+# VS Code（个人环境配置，不提交）
+.vscode/
+
+# 测试/类型检查缓存
+.pytest_cache/
+.mypy_cache/
+
+# 日志文件（保留 log/.gitkeep）
+log/*.log
+log/*.log.*
+
+# 构建产物
+build/
+dist/
+*.egg-info/

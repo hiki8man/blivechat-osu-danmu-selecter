@@ -10,4 +10,6 @@ USER_NAME = "set you osu name" # 用户名
 PASSWORD = "get your irc password" # irc密码
 API_SERVER = "osu_html" # 获取谱面方式，默认从官网获取
 SEND_SELF:bool = True # 是否转发给自己，lazer请设置为false让消息转发给BanchoBot
+
+# ===DEBUG日志===
 LOG_LEVEL = "INFO"  # 日志级别：DEBUG/INFO/WARNING/ERROR，调试时改为 DEBUG

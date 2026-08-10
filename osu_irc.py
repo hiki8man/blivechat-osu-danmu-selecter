@@ -96,6 +96,7 @@ class AsyncIRCClient:
         # [TODO] 改为控制GUI内部状态
         if self.shut_down_event:
             self.shut_down_event.set()
+
     async def _login(self):
         """尝试登录"""
         
@@ -208,7 +209,7 @@ async def send_beatmap_url(irc_client:AsyncIRCClient, mapid:str, user_name:str) 
     else:
         # 如果无法正常获取谱面信息则直接返回链接，不考虑正确性
         beatmap_msg = f"【{user_name}】点歌：https://osu.ppy.sh/{mapid[0]}/{mapid[1:]}"
-    logger.debug("正在发送信息到Osu IRC")
+    logger.debug("收到点歌指令，正在发送信息到Osu IRC")
     
     target_name = config.USER_NAME if config.SEND_SELF else "BanchoBot"
     await send_msg(irc_client, beatmap_msg, target_name)
